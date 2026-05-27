@@ -89,14 +89,6 @@ python start_train.py --task 1
 # 或顺序训练所有任务
 python start_train.py --task all
 ```
-
-**方式二：进入子目录单独训练**
-```bash
-cd 01_image_classification
-python train.py
-cd ..
-```
-
 > **设计说明：** 为了让您立刻看到效果，所有的训练脚本都默认使用了小样本截断或极少的 epoch。您可以在几分钟内完成一个任务的微调训练。
 
 ### 第二步：启动交互式展示界面 (`start_ui.py`)

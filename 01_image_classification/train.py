@@ -34,8 +34,8 @@ def train():
 
     train_loader, test_loader, classes = download_and_load_data(batch_size=128)
 
-    # Use lightweight ResNet18
-    model = models.resnet18(weights=None)
+    # Use pre-trained ResNet18
+    model = models.resnet18(weights='DEFAULT')
     # Modify the final fully connected layer for 10 classes
     model.fc = nn.Linear(model.fc.in_features, 10)
     model = model.to(device)
