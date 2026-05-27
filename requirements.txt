@@ -1,0 +1,20 @@
+# 基础支持
+numpy
+pandas
+matplotlib
+scikit-learn
+Pillow
+
+# Hugging Face 大一统全家桶
+transformers
+datasets
+evaluate
+accelerate
+sacremoses
+
+# 音频处理支持
+librosa
+soundfile
+
+# UI展示界面支持
+gradio
