@@ -25,4 +25,4 @@ with gr.Blocks(title="10 Time Series Forecasting") as demo:
         gr.Markdown("### ⚠️ Warning: Model weights not found. Please run `python train.py` first.")
 
 if __name__ == "__main__":
-    demo.launch(server_name="0.0.0.0", share=False)
+    demo.launch(server_name="0.0.0.0", share=True)
