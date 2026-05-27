@@ -1,4 +1,6 @@
 import os
+os.environ.setdefault("HF_ENDPOINT", "https://hf-mirror.com")  # 国内镜像
+
 import torch
 from datasets import load_dataset
 from transformers import (

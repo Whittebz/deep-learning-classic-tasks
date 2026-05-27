@@ -2,6 +2,11 @@ import argparse
 import subprocess
 import os
 
+# ===== 国内镜像配置 =====
+# HuggingFace 国内镜像（影响任务 04-07 的模型和数据集下载）
+# 如果你的网络可以直连 huggingface.co，可以注释掉下面这行
+os.environ.setdefault("HF_ENDPOINT", "https://hf-mirror.com")
+
 TASKS = {
     "1": "01_image_classification",
     "2": "02_object_detection",

@@ -1,102 +1,162 @@
-# 深度学习十大经典任务 (DeepLearning 10 Tasks) - 部署与使用文档
+# 深度学习十大经典任务 (Deep Learning 10 Classic Tasks)
 
-本项目整合了深度学习领域中覆盖计算机视觉(CV)、自然语言处理(NLP)与时间序列分析的10个经典任务。为了便于在各种服务器（特别是配备GPU的服务器）上进行统一管理与展示，我们采用了 **“全局统一环境 + 内部解耦架构”** 的设计。
+本项目整合了深度学习领域中覆盖**计算机视觉 (CV)**、**自然语言处理 (NLP)**、**语音处理 (Audio)** 与**时间序列分析 (TimeSeries)** 的 10 个经典任务。
+
+每个任务采用统一的 **"train → inference → app"** 三层解耦架构，训练完成后可独立启动 Gradio Web 界面查看效果。
 
 ---
 
-## 1. 任务选型速查表
+## 1. 任务选型
 
 为了保证能在合理时间内完成 GPU 训练，所有任务都会选用轻量级模型或截断后的小样本经典数据集：
 
-| 任务编号 | 任务名称 | 领域 | 使用模型 | 使用数据集 (Mini版) |
-| :---: | :--- | :---: | :--- | :--- |
-| **01** | 图像分类 (Image Classification) | CV | ResNet18 | CIFAR-10 (微型图片10分类) |
-| **02** | 目标检测 (Object Detection) | CV | Faster R-CNN (MobileNetV3) | PennFudanPed (极小行人检测集) |
-| **03** | 语义分割 (Semantic Segmentation) | CV | U-Net / FCN | Oxford-IIIT Pet (裁剪版/单类目) |
-| **04** | 文本情感分类 (sentiment_analysis) | NLP | DistilBERT | IMDB (截断取2000条样本极速微调) |
-| **05** | 机器翻译 (Machine Translation) | NLP | Seq2Seq (GRU/LSTM) | fra-eng (法译英迷你数据集) |
-| **06** | 命名实体识别 (NER) | NLP | DistilBERT (TokenCls) | CoNLL-2003 (极小截断集) |
-| **07** | 文本摘要 (Summarization) | NLP | T5-small | CNN/DailyMail (截断小样本演示) |
-| **08** | 语音识别 (ASR) | Audio | M5 (纯CNN网络) | SpeechCommands (短语音关键词) |
-| **09** | 图像生成 (Image Generation) | CV | DCGAN | MNIST (手写数字生成) |
-| **10** | 时间序列预测 (Time Series) | TimeSeries | LSTM | Airline Passengers (航空客运量预测) |
+| 编号 | 任务名称 | 领域 | 使用模型 | 数据集 | 训练模式 |
+| :---: | :--- | :---: | :--- | :--- | :---: |
+| **01** | 图像分类 | CV | ResNet18 | CIFAR-10 (50000张) | 微调 |
+| **02** | 目标检测 | CV | Faster R-CNN (MobileNetV3) | PennFudanPed (170张) | 微调 |
+| **03** | 语义分割 | CV | FCN-ResNet50 | Oxford-IIIT Pet (取200张) | 微调 |
+| **04** | 情感分析 | NLP | DistilBERT | IMDB (取1000条) | 微调 |
+| **05** | 机器翻译 | NLP | opus-mt-en-fr (Transformer) | opus_books en-fr (取500条) | 微调 |
+| **06** | 命名实体识别 | NLP | DistilBERT (TokenCls) | CoNLL-2003 (取500条) | 微调 |
+| **07** | 文本摘要 | NLP | T5-small | CNN/DailyMail (取500条) | 微调 |
+| **08** | 语音识别 | Audio | M5 (自定义CNN) | SpeechCommands (取1000条) | 从零训练 |
+| **09** | 图像生成 | CV | DCGAN (自定义GAN) | MNIST (取2000张) | 从零训练 |
+| **10** | 时间序列预测 | TimeSeries | LSTM (自定义) | Airline Passengers (144条) | 从零训练 |
 
 ---
 
-## 2. 硬件要求与 AutoDL 镜像选择
+## 2. 训练模式详解
 
-本项目推荐在云端 GPU 服务器（如 AutoDL）上运行。由于所有 10 个任务共享**一个大一统的运行环境**，且如果基础环境带有 PyTorch 则无需从头搭建繁杂的 Miniconda，您可以直接租用预装好 PyTorch 的基础镜像，开箱即用！
+本项目的 10 个任务采用了两种不同的训练方式：
 
-**🌟 AutoDL 使用配置：**
-- **框架**：`PyTorch 2.1.0` (或 2.0.1 以上)
+### 基于预训练模型微调 (Fine-tuning) — 任务 01~07
+
+这 7 个任务加载了社区发布的预训练权重（ImageNet / COCO / HuggingFace），然后在一个小数据集上进行**微调 (Fine-tuning)**。
+
+| 编号 | 预训练权重来源 | 微调数据量 | Epochs |
+| :---: | :--- | :--- | :---: |
+| 01 | `torchvision` ResNet18 (ImageNet) | 全集 50000 张 | 2 |
+| 02 | `torchvision` Faster R-CNN MobileNetV3 (COCO) | 120 张 | 2 |
+| 03 | `torchvision` FCN-ResNet50 (COCO) | 200 张子集 | 2 |
+| 04 | HuggingFace `distilbert-base-uncased` | 1000 条子集 | 1 |
+| 05 | HuggingFace `Helsinki-NLP/opus-mt-en-fr` | 450 条子集 | 1 |
+| 06 | HuggingFace `distilbert-base-uncased` | 500 条子集 | 2 |
+| 07 | HuggingFace `t5-small` | 500 条子集 | 1 |
+
+### 从零开始训练 (From Scratch) — 任务 08、09、10
+这 3 个任务使用**自定义网络架构**，没有加载任何预训练权重，是真正的从零训练。
+| 编号 | 自定义模型 | 网络类型 | 训练数据量 | Epochs |
+| :---: | :--- | :--- | :--- | :---: |
+| 08 | M5 | 纯一维 CNN | 1000 条子集 | 2 |
+| 09 | DCGAN (Generator + Discriminator) | 对抗生成网络 | 2000 张子集 | 2 |
+| 10 | LSTMForecaster | LSTM 循环网络 | 144 条全集 | 150 |
+
+---
+
+## 3. 硬件要求与 AutoDL 镜像选择
+
+AutoDL服务器运行。所有 10 个任务共享一个统一的运行环境。
+** AutoDL 推荐配置（基础镜像）：**
+- **框架**：`PyTorch 2.5.1`
 - **Python**：`Python 3.10`
-- **CUDA**：`CUDA 12.1` (或 11.8)
+- **CUDA**：`CUDA 12.1`
 - **系统**：`Ubuntu 22.04`
 
-*在 AutoDL 创建实例时，直接在“基础镜像”的 PyTorch 分类下选择符合上述配置的镜像即可。*
-
 ---
 
-## 3. 一键环境部署
-
-当您启动 AutoDL 实例并打开终端后，您当前所处的已经是包含了 PyTorch 的底层环境。您只需要补充安装剩余的轻量级依赖即可：
+## 4. 环境部署
 
 ```bash
-# 1. 确保在项目根目录
+# 1. 进入项目根目录
 cd deep-learning-classic-tasks
-
-# 2. 安装自然语言处理、语音、时序和UI展示所需的依赖
+# 2. 安装所有依赖
 pip install -r requirements.txt
 ```
 
-> **说明：** 使用自带 PyTorch 镜像配合 pip 补充依赖，只需要十几秒您的环境就彻底准备完毕，可以直接开始运行所有的训练和展示脚本了。
-
 ---
 
-## 4. 项目结构概览
+## 5. 项目结构概览
 
 ```text
 deep-learning-classic-tasks/
-├── README.md                    # 本部署文档
-├── requirements.txt             # 全局依赖列表
-├── start_train.py               # 统一的外部训练脚本
-├── start_ui.py                  # 统一的 UI 启动脚手架
+├── README.md                        
+├── requirements.txt                 # 全局 pip 依赖列表
+├── .gitignore                       
+├── start_train.py                   # 统一训练入口脚本
+├── start_ui.py                      # 统一 UI 启动脚本
 │
-├── 01_image_classification/     # 任务1：图像分类
-│   ├── train.py                 # 核心训练脚本：加载数据、GPU训练、保存权重
-│   ├── inference.py             # 独立推理逻辑：加载权重并提供 predict 接口
-│   ├── app.py                   # Gradio 极简 UI，内部调用 inference.py
-│   └── models/                  # 训练完成后自动生成的权重存放文件夹
+├── 01_image_classification/         # 任务1：图像分类 (ResNet18 + CIFAR-10)
+│   ├── train.py                     #   训练脚本：数据加载、模型微调、保存权重
+│   ├── inference.py                 #   推理逻辑：加载权重、提供 predict 接口
+│   ├── app.py                       #   Gradio Web UI，调用 inference.py
+│   └── models/                      #   训练产物：权重文件（已被 .gitignore 忽略）
 │
-├── 02_object_detection/         # 任务2：目标检测 (结构同上)
-└── ...                          # 其他任务文件夹
+├── 02_object_detection/             # 任务2：目标检测 (Faster R-CNN + PennFudanPed)
+├── 03_semantic_segmentation/        # 任务3：语义分割 (FCN-ResNet50 + Oxford Pet)
+├── 04_sentiment_analysis/           # 任务4：情感分析 (DistilBERT + IMDB)
+├── 05_machine_translation/          # 任务5：机器翻译 (opus-mt-en-fr + opus_books)
+├── 06_named_entity_recognition/     # 任务6：命名实体识别 (DistilBERT + CoNLL-2003)
+├── 07_text_summarization/           # 任务7：文本摘要 (T5-small + CNN/DailyMail)
+├── 08_speech_recognition/           # 任务8：语音识别 (M5 CNN + SpeechCommands)
+├── 09_image_generation/             # 任务9：图像生成 (DCGAN + MNIST)
+├── 10_time_series_forecasting/      # 任务10：时间序列预测 (LSTM + Airline)
+│
+├── Log/                             # 各任务完成记录
+└── Task.md                          # 原始任务需求文档
 ```
+
+> 每个任务子文件夹 (`01_` ~ `10_`) 内部结构一致，均包含 `train.py`、`inference.py`、`app.py` 三个文件。训练后会自动生成 `models/` 目录存放权重。
 
 ---
 
-## 5. 如何运行（核心两步走）
+## 6. 如何运行
 
-为了保证您的显存不会溢出，并且能够直观地看到每个任务的训练 Loss 变化，**建议您逐个任务进行操作。** 操作分为“训练”和“展示”两步。
+### 第一步：训练模型
 
-### 第一步：执行训练生成权重 (`train.py` 或 `start_train.py`)
-每个任务下的 `app.py` 都会依赖于训练后保存的模型权重，因此在查看任何 UI 之前，**必须先执行一次该任务的训练脚本**。
+建议**逐个任务**训练，以避免显存溢出：
 
-**方式一：使用统一脚本（推荐）**
 ```bash
 # 训练指定任务（例如任务1）
 python start_train.py --task 1
 
-# 或顺序训练所有任务
+# 或顺序训练全部任务
 python start_train.py --task all
 ```
-> **设计说明：** 为了让您立刻看到效果，所有的训练脚本都默认使用了小样本截断或极少的 epoch。您可以在几分钟内完成一个任务的微调训练。
 
-### 第二步：启动交互式展示界面 (`start_ui.py`)
-模型训练完成并保存后，您可以返回到项目**根目录**，使用提供的统一脚本一键启动 Web 界面。
+> **设计说明**：所有训练脚本默认使用小样本截断或极少的 epoch，可在几分钟内完成单个任务的训练。
+
+### 第二步：启动 Web 展示界面
+
+**每个任务训练完成后可立即独立查看效果，不需要等全部任务训练完。**
 
 ```bash
-# 启动特定任务的展示UI，例如启动任务1 (图像分类)
+# 启动指定任务的展示 UI（例如任务1）
 python start_ui.py --task 1
 ```
 
-执行后，终端会打印出一个本地链接（如：`http://0.0.0.0:7861`）。在浏览器中打开此链接，或通过 AutoDL 提供的“自定义服务”端口映射打开，即可测试您的模型效果。
+执行后，终端会打印本地链接（如 `http://0.0.0.0:7860`），在浏览器中打开即可交互测试模型效果。
+
+如果使用 AutoDL，可通过"自定义服务"端口映射功能访问该链接。
+
+> **提示**：若还未训练该任务，Web 页面会显示 `⚠️ Warning: Model weights not found` 警告，此时需先运行对应的训练脚本。
+
+---
+
+## 7. 训练产物（权重文件）一览
+
+训练完成后，各任务的权重文件保存在各自的 `models/` 子目录下：
+
+| 编号 | 保存路径 | 文件类型 |
+| :---: | :--- | :--- |
+| 01 | `01_image_classification/models/resnet18_cifar10.pth` | PyTorch state_dict |
+| 02 | `02_object_detection/models/faster_rcnn_pennfudan.pth` | PyTorch state_dict |
+| 03 | `03_semantic_segmentation/models/fcn_resnet50_pet.pth` | PyTorch state_dict |
+| 04 | `04_sentiment_analysis/models/distilbert_imdb/` | HuggingFace 模型目录 |
+| 05 | `05_machine_translation/models/translation_en_fr/` | HuggingFace 模型目录 |
+| 06 | `06_named_entity_recognition/models/distilbert_ner/` | HuggingFace 模型目录 |
+| 07 | `07_text_summarization/models/t5_summarization/` | HuggingFace 模型目录 |
+| 08 | `08_speech_recognition/models/m5_speech_commands.pth` | PyTorch state_dict |
+| 09 | `09_image_generation/models/dcgan_generator.pth` | PyTorch state_dict |
+| 10 | `10_time_series_forecasting/models/lstm_airline.pth` + `scaler.pkl` | PyTorch + Joblib |
+
+> ⚠️ 所有 `models/` 目录和 `data/` 目录均已通过 `.gitignore` 忽略，不会被推送到 Git 仓库。

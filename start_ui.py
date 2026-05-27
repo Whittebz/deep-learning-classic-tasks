@@ -6,7 +6,7 @@ TASK_MAP = {
     1: "01_image_classification",
     2: "02_object_detection",
     3: "03_semantic_segmentation",
-    4: "04_text_classification",
+    4: "04_sentiment_analysis",
     5: "05_machine_translation",
     6: "06_named_entity_recognition",
     7: "07_text_summarization",
