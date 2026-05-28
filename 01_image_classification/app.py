@@ -29,4 +29,4 @@ with gr.Blocks(title="01 Image Classification - CIFAR-10") as demo:
         gr.Markdown("### ⚠️ Warning: Model weights not found. Please run `python train.py` in this directory first.")
 
 if __name__ == "__main__":
-    demo.launch(server_name="0.0.0.0", share=True)
+    demo.launch(server_name="0.0.0.0", server_port=6006, share=False)
