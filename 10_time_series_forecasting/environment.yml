@@ -1,0 +1,21 @@
+# Task 10: 时间序列预测 (Time Series Forecasting)
+# 模型: LSTM (自定义) | 数据集: Airline Passengers | 框架: PyTorch + Pandas + Scikit-learn
+name: dl_task10
+channels:
+  - pytorch
+  - nvidia
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.10
+  - pytorch
+  - pytorch-cuda=12.4
+  - numpy
+  - pandas
+  - scikit-learn
+  - matplotlib
+  - pillow
+  - joblib
+  - pip
+  - pip:
+    - gradio

@@ -1,0 +1,20 @@
+# Task 05: 机器翻译 (Machine Translation)
+# 模型: Helsinki-NLP/opus-mt-en-fr | 数据集: opus_books | 框架: HuggingFace Transformers
+name: dl_task05
+channels:
+  - pytorch
+  - nvidia
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.10
+  - pytorch
+  - pytorch-cuda=12.4
+  - pip
+  - pip:
+    - transformers
+    - datasets
+    - accelerate
+    - evaluate
+    - sacremoses
+    - gradio

@@ -1,0 +1,19 @@
+# Task 04: 情感分析 (Sentiment Analysis)
+# 模型: DistilBERT | 数据集: IMDB | 框架: HuggingFace Transformers
+name: dl_task04
+channels:
+  - pytorch
+  - nvidia
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.10
+  - pytorch
+  - pytorch-cuda=12.4
+  - pip
+  - pip:
+    - transformers
+    - datasets
+    - accelerate
+    - evaluate
+    - gradio

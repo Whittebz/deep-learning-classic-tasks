@@ -1,0 +1,19 @@
+# Task 09: 图像生成 (Image Generation)
+# 模型: DCGAN (自定义) | 数据集: MNIST | 框架: PyTorch + TorchVision
+name: dl_task09
+channels:
+  - pytorch
+  - nvidia
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.10
+  - pytorch
+  - torchvision
+  - pytorch-cuda=12.4
+  - numpy
+  - pillow
+  - matplotlib
+  - pip
+  - pip:
+    - gradio

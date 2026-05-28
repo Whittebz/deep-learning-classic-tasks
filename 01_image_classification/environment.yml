@@ -1,0 +1,18 @@
+# Task 01: 图像分类 (Image Classification)
+# 模型: ResNet18 | 数据集: CIFAR-10 | 框架: PyTorch + TorchVision
+name: dl_task01
+channels:
+  - pytorch
+  - nvidia
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.10
+  - pytorch
+  - torchvision
+  - pytorch-cuda=12.4
+  - numpy
+  - pillow
+  - pip
+  - pip:
+    - gradio

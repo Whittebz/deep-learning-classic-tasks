@@ -1,0 +1,18 @@
+# Task 02: 目标检测 (Object Detection)
+# 模型: Faster R-CNN MobileNetV3 | 数据集: PennFudanPed | 框架: PyTorch + TorchVision
+name: dl_task02
+channels:
+  - pytorch
+  - nvidia
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.10
+  - pytorch
+  - torchvision
+  - pytorch-cuda=12.4
+  - numpy
+  - pillow
+  - pip
+  - pip:
+    - gradio

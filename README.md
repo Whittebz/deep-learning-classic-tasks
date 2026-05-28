@@ -55,22 +55,53 @@
 
 ## 3. 硬件要求与 AutoDL 镜像选择
 
-AutoDL服务器运行。所有 10 个任务共享一个统一的运行环境。
-** AutoDL 推荐配置（基础镜像）：**
-- **框架**：`PyTorch 2.5.1`
-- **Python**：`Python 3.10`
-- **CUDA**：`CUDA 12.1`
+AutoDL 服务器运行。每个任务使用独立的 Conda 虚拟环境，实现依赖完全隔离。
+
+**AutoDL 推荐配置（基础镜像）：**
+- **框架**：`Miniconda` (conda3)
+- **Python**：`Python 3.10` (由各任务 environment.yml 指定)
+- **CUDA**：`CUDA 12.4`
 - **系统**：`Ubuntu 22.04`
+
+> **为什么使用 Conda 环境隔离？**
+> 不同的深度学习任务对 PyTorch、CUDA、以及第三方库的版本要求可能相互冲突（例如 torchaudio 需要精确匹配 torch 的 CUDA 版本）。使用 Conda 为每个任务创建独立环境，能从根本上避免版本冲突。
+> 这也是现代 AI 服务在生产环境中的标准做法——每个模型服务运行在独立的 Docker 容器中，本项目用 Conda 环境模拟了这一理念。
 
 ---
 
 ## 4. 环境部署
 
+### 方式一：一键创建所有环境
+
 ```bash
 # 1. 进入项目根目录
 cd deep-learning-classic-tasks
-# 2. 安装所有依赖
-pip install -r requirements.txt
+
+# 2. 一键创建所有 10 个 Conda 环境（首次约 30-60 分钟）
+bash setup_envs.sh
+```
+
+### 方式二：按需创建单个环境（推荐）
+
+```bash
+# 只创建任务 1 的环境
+bash setup_envs.sh --task 1
+
+# 或者在训练时自动创建
+python start_train.py --task 1 --setup
+```
+
+### 环境管理命令
+
+```bash
+# 查看已创建的环境
+bash setup_envs.sh --list
+
+# 强制重建某个环境
+bash setup_envs.sh --task 1 --force
+
+# 删除所有 dl_task 环境
+bash setup_envs.sh --clean
 ```
 
 ---
@@ -80,63 +111,93 @@ pip install -r requirements.txt
 ```text
 deep-learning-classic-tasks/
 ├── README.md                        
-├── requirements.txt                 # 全局 pip 依赖列表
+├── requirements.txt                 # 全局依赖概览（仅文档参考）
+├── setup_envs.sh                    # 一键创建/管理 Conda 环境
 ├── .gitignore                       
-├── start_train.py                   # 统一训练入口脚本
-├── start_ui.py                      # 统一 UI 启动脚本
+├── start_train.py                   # 统一训练入口（自动切换 Conda 环境）
+├── start_ui.py                      # 统一 UI 启动入口（自动切换 Conda 环境）
 │
 ├── 01_image_classification/         # 任务1：图像分类 (ResNet18 + CIFAR-10)
-│   ├── train.py                     #   训练脚本：数据加载、模型微调、保存权重
-│   ├── inference.py                 #   推理逻辑：加载权重、提供 predict 接口
-│   ├── app.py                       #   Gradio Web UI，调用 inference.py
-│   └── models/                      #   训练产物：权重文件（已被 .gitignore 忽略）
+│   ├── environment.yml              #   ★ Conda 环境配置（精确依赖声明）
+│   ├── train.py                     #   训练脚本
+│   ├── inference.py                 #   推理逻辑
+│   ├── app.py                       #   Gradio Web UI
+│   └── models/                      #   训练产物（.gitignore 忽略）
 │
-├── 02_object_detection/             # 任务2：目标检测 (Faster R-CNN + PennFudanPed)
-├── 03_semantic_segmentation/        # 任务3：语义分割 (FCN-ResNet50 + Oxford Pet)
-├── 04_sentiment_analysis/           # 任务4：情感分析 (DistilBERT + IMDB)
-├── 05_machine_translation/          # 任务5：机器翻译 (opus-mt-en-fr + opus_books)
-├── 06_named_entity_recognition/     # 任务6：命名实体识别 (DistilBERT + CoNLL-2003)
-├── 07_text_summarization/           # 任务7：文本摘要 (T5-small + CNN/DailyMail)
-├── 08_speech_recognition/           # 任务8：语音识别 (M5 CNN + SpeechCommands)
-├── 09_image_generation/             # 任务9：图像生成 (DCGAN + MNIST)
-├── 10_time_series_forecasting/      # 任务10：时间序列预测 (LSTM + Airline)
+├── 02_object_detection/             # 任务2：目标检测
+├── 03_semantic_segmentation/        # 任务3：语义分割
+├── ...                              # 每个任务目录均含 environment.yml
+├── 10_time_series_forecasting/      # 任务10：时间序列预测
 │
 ├── Log/                             # 各任务完成记录
 └── Task.md                          # 原始任务需求文档
 ```
 
-> 每个任务子文件夹 (`01_` ~ `10_`) 内部结构一致，均包含 `train.py`、`inference.py`、`app.py` 三个文件。训练后会自动生成 `models/` 目录存放权重。
+> 每个任务子文件夹 (`01_` ~ `10_`) 内部结构一致，均包含 `environment.yml`、`train.py`、`inference.py`、`app.py`。启动训练或 UI 时，启动脚本会自动通过 `conda run` 在对应的隔离环境中执行。
 
 ---
 
 ## 6. 如何运行
 
-### 第一步：训练模型
+### 第一步：创建环境 + 训练模型
 
 建议**逐个任务**训练，以避免显存溢出：
 
 ```bash
-# 训练指定任务（例如任务1）
+# 训练指定任务（环境不存在时自动创建）
+python start_train.py --task 1 --setup
+
+# 如果环境已创建，可省略 --setup
 python start_train.py --task 1
 
-# 或顺序训练全部任务
-python start_train.py --task all
+# 顺序训练全部任务（自动创建所有环境）
+python start_train.py --task all --setup
 ```
 
 > **设计说明**：所有训练脚本默认使用小样本截断或极少的 epoch，可在几分钟内完成单个任务的训练。
+> `start_train.py` 使用 `conda run` 在对应任务的隔离环境中执行训练，无需手动 `conda activate`。
 
 ### 第二步：启动 Web 展示界面
 
 **每个任务训练完成后可立即独立查看效果，不需要等全部任务训练完。**
 
 ```bash
-# 启动指定任务的展示 UI（例如任务1）
+# 启动指定任务的展示 UI（自动在对应 Conda 环境中运行）
 python start_ui.py --task 1
+
+# 如果环境未创建，加 --setup
+python start_ui.py --task 1 --setup
 ```
 
-执行后，终端会打印本地链接（如 `http://0.0.0.0:7860`），在浏览器中打开即可交互测试模型效果。
+执行后，终端会打印本地链接（如 `http://0.0.0.0:7860`）以及一个公网链接，在浏览器中打开即可交互测试模型效果。
 
-使用 AutoDL，可通过"自定义服务"端口映射功能访问该链接。
+使用 AutoDL，可通过 Gradio 的 `share=True` 公网链接直接访问，无需配置端口映射。
+
+---
+
+## Conda 环境一览
+
+# 1. 逐个创建环境并训练（推荐）
+python start_train.py --task 10 --setup   # 先从最轻量的 Task 10 开始测试
+
+# 2. 或批量创建环境
+bash setup_envs.sh
+
+# 3. 启动 UI 展示
+python start_ui.py --task 10 --setup
+
+| 环境名 | 对应任务 | 核心依赖 |
+| :--- | :--- | :--- |
+| `dl_task01` | 图像分类 | torch, torchvision, pillow, gradio |
+| `dl_task02` | 目标检测 | torch, torchvision, numpy, pillow, gradio |
+| `dl_task03` | 语义分割 | torch, torchvision, numpy, pillow, gradio |
+| `dl_task04` | 情感分析 | torch, transformers, datasets, gradio |
+| `dl_task05` | 机器翻译 | torch, transformers, datasets, sacremoses, gradio |
+| `dl_task06` | 命名实体识别 | torch, transformers, datasets, gradio |
+| `dl_task07` | 文本摘要 | torch, transformers, datasets, gradio |
+| `dl_task08` | 语音识别 | torch, torchaudio, librosa, soundfile, gradio |
+| `dl_task09` | 图像生成 | torch, torchvision, matplotlib, gradio |
+| `dl_task10` | 时间序列预测 | torch, pandas, scikit-learn, matplotlib, gradio |
 
 ## 7. 训练产物（权重文件）一览
 
