@@ -137,6 +137,21 @@ def run_task(task_id, auto_setup=False):
     # 构建环境变量（传递 HF 镜像配置给子进程）
     env = os.environ.copy()
     env.setdefault("HF_ENDPOINT", HF_MIRROR)
+    env.setdefault("HF_HOME", "/root/autodl-tmp/hf_home")
+    env.setdefault("HUGGINGFACE_HUB_CACHE", "/root/autodl-tmp/hf_home/hub")
+    env.setdefault("TRANSFORMERS_CACHE", "/root/autodl-tmp/hf_home/transformers")
+    env.setdefault("HF_DATASETS_CACHE", "/root/autodl-tmp/hf_home/datasets")
+    env.setdefault("TORCH_HOME", "/root/autodl-tmp/torch_home")
+    env.setdefault("TMPDIR", "/root/autodl-tmp/tmp")
+    if env.get("OMP_NUM_THREADS") in (None, "", "0"):
+        env["OMP_NUM_THREADS"] = "1"
+
+    os.makedirs(env["HF_HOME"], exist_ok=True)
+    os.makedirs(env["HUGGINGFACE_HUB_CACHE"], exist_ok=True)
+    os.makedirs(env["TRANSFORMERS_CACHE"], exist_ok=True)
+    os.makedirs(env["HF_DATASETS_CACHE"], exist_ok=True)
+    os.makedirs(env["TORCH_HOME"], exist_ok=True)
+    os.makedirs(env["TMPDIR"], exist_ok=True)
 
     try:
         # 使用 conda run 在目标环境中执行训练脚本

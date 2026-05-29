@@ -17,7 +17,7 @@ def train():
 
     print("Downloading and preparing CoNLL-2003 dataset...")
     # CoNLL-2003 is the classic NER dataset
-    dataset = load_dataset("conll2003")
+    dataset = load_dataset("tomaarsen/conll2003")
     
     # We will take a very small subset for fast demonstration
     small_train_dataset = dataset["train"].select(range(500))
@@ -60,26 +60,45 @@ def train():
     
     data_collator = DataCollatorForTokenClassification(tokenizer)
     
-    training_args = TrainingArguments(
+    common_args = dict(
         output_dir="./models/results",
         learning_rate=2e-5,
         per_device_train_batch_size=16,
         per_device_eval_batch_size=16,
         num_train_epochs=2,
         weight_decay=0.01,
-        evaluation_strategy="epoch",
         save_strategy="epoch",
-        logging_steps=10
+        logging_steps=10,
     )
+    try:
+        training_args = TrainingArguments(
+            eval_strategy="epoch",
+            **common_args,
+        )
+    except TypeError:
+        training_args = TrainingArguments(
+            evaluation_strategy="epoch",
+            **common_args,
+        )
 
-    trainer = Trainer(
-        model=model,
-        args=training_args,
-        train_dataset=tokenized_train,
-        eval_dataset=tokenized_eval,
-        tokenizer=tokenizer,
-        data_collator=data_collator
-    )
+    try:
+        trainer = Trainer(
+            model=model,
+            args=training_args,
+            train_dataset=tokenized_train,
+            eval_dataset=tokenized_eval,
+            processing_class=tokenizer,
+            data_collator=data_collator,
+        )
+    except TypeError:
+        trainer = Trainer(
+            model=model,
+            args=training_args,
+            train_dataset=tokenized_train,
+            eval_dataset=tokenized_eval,
+            tokenizer=tokenizer,
+            data_collator=data_collator,
+        )
 
     print("Starting training...")
     trainer.train()
