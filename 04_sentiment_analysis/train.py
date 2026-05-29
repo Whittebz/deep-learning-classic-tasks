@@ -16,7 +16,7 @@ def train():
 
     print("Downloading and preparing IMDB dataset...")
     # Load IMDB dataset
-    dataset = load_dataset("imdb")
+    dataset = load_dataset("huggingface/imdb")
     
     # We will take a very small subset for fast demonstration (1000 train, 200 test)
     small_train_dataset = dataset["train"].shuffle(seed=42).select(range(1000))

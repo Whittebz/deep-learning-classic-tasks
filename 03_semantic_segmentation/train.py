@@ -64,9 +64,9 @@ def train():
 
     train_loader = get_dataset(batch_size=4)
 
-    # Use pre-trained FCN with ResNet50 backbone
+    # Use FCN with ResNet50 backbone and custom number of classes for Oxford-IIIT Pet
     # Oxford pet has 3 classes: Background(0), Foreground/Pet(1), Boundary(2)
-    model = models.segmentation.fcn_resnet50(weights='DEFAULT', num_classes=3)
+    model = models.segmentation.fcn_resnet50(weights=None, num_classes=3)
     model.to(device)
 
     criterion = nn.CrossEntropyLoss()

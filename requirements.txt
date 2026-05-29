@@ -35,6 +35,7 @@
 # accelerate       (pip, 任务 04/05/06/07)
 # evaluate         (pip, 任务 04/05/06/07)
 # sacremoses       (pip, 任务 05)
+# sentencepiece    (pip or conda-forge, required by Marian/opus models, 任务 05)
 
 # ---------- 音频处理（通过 pip 安装） ----------
 # librosa          (pip, 任务 08)

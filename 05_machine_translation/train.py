@@ -20,7 +20,25 @@ def train():
     model_checkpoint = "Helsinki-NLP/opus-mt-en-fr"
     print("Downloading dataset...")
     # Using 'opus_books' dataset which has en-fr pairs
-    raw_datasets = load_dataset("opus_books", "en-fr")
+    # Try multiple dataset identifiers to handle different HuggingFace Hub versions
+    candidates = [
+        "opus_books",
+        "huggingface/opus_books",
+        "Helsinki-NLP/opus_books",
+        "opus/opus_books",
+    ]
+    last_exc = None
+    for name in candidates:
+        try:
+            raw_datasets = load_dataset(name, "en-fr")
+            print(f"Loaded dataset with identifier: {name}")
+            break
+        except Exception as e:
+            last_exc = e
+            print(f"Failed to load with identifier '{name}': {e}")
+    else:
+        # If none of the candidates worked, re-raise the last exception for visibility
+        raise last_exc
     
     # Take a tiny subset for rapid demonstration
     small_train = raw_datasets["train"].shuffle(seed=42).select(range(500))
@@ -29,7 +47,20 @@ def train():
     train_dataset = split_dataset["train"]
     eval_dataset = split_dataset["test"]
 
-    tokenizer = AutoTokenizer.from_pretrained(model_checkpoint)
+    try:
+        tokenizer = AutoTokenizer.from_pretrained(model_checkpoint)
+    except Exception as e:
+        print(f"AutoTokenizer failed: {e}\nAttempting MarianTokenizer fallback...")
+        try:
+            from transformers import MarianTokenizer
+            tokenizer = MarianTokenizer.from_pretrained(model_checkpoint)
+        except ImportError as ie:
+            raise ImportError(
+                "MarianTokenizer requires the 'sentencepiece' library which is not installed.\n"
+                "Install it with either:\n\n  conda install -c conda-forge sentencepiece\n\nor\n\n  pip install sentencepiece\n\n"
+                "Then restart the script and retry.") from ie
+        except Exception as e2:
+            raise
     model = AutoModelForSeq2SeqLM.from_pretrained(model_checkpoint)
     model.to(device)
 
