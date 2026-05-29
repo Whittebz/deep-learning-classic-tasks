@@ -58,7 +58,7 @@
 AutoDL 服务器运行。每个任务使用独立的 Conda 虚拟环境，实现依赖完全隔离。
 
 **AutoDL 推荐配置（基础镜像）：**
-- **框架**：`Miniconda` (conda3)
+- **框架**：`Miniconda` 
 - **Python**：`Python 3.10` (由各任务 environment.yml 指定)
 - **CUDA**：`CUDA 12.4`
 - **系统**：`Ubuntu 22.04`
@@ -118,7 +118,7 @@ deep-learning-classic-tasks/
 ├── start_ui.py                      # 统一 UI 启动入口（自动切换 Conda 环境）
 │
 ├── 01_image_classification/         # 任务1：图像分类 (ResNet18 + CIFAR-10)
-│   ├── environment.yml              #   ★ Conda 环境配置（精确依赖声明）
+│   ├── environment.yml              #   ★ Conda 环境配置
 │   ├── train.py                     #   训练脚本
 │   ├── inference.py                 #   推理逻辑
 │   ├── app.py                       #   Gradio Web UI

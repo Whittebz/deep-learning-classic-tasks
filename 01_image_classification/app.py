@@ -28,4 +28,4 @@ with gr.Blocks(title="01 Image Classification - CIFAR-100") as demo:
 
 
 if __name__ == "__main__":
-    demo.launch(server_name="0.0.0.0", share=True)
+    demo.launch(server_name="0.0.0.0", server_port=6006, share=False)
