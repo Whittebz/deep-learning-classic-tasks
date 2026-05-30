@@ -1,4 +1,4 @@
-# 深度学习十大经典任务（Deep Learning 10 Classic Tasks）
+# 深度学习十大经典任务
 
 本项目整合了深度学习领域中覆盖 **计算机视觉（CV）**、**自然语言处理（NLP）**、**语音处理（Audio）** 与 **时间序列分析（Time Series）** 的 10 个经典任务。
 
@@ -200,6 +200,7 @@ This project uses a Transformer model for translation.
 | :--- | :--- | :--- |
 | sample_01.wav | 对我做了介绍。啊,那么我想说的是，大家如果对我的研究感兴趣呢， | 对我做了介绍啊那么我想说的是呢大家如果对我的研究感兴趣呢 |
 | sample_03.wav | 重点呢,想谈三个问题。首先呢，就是这一轮全球金融动荡的表现。| 重点呢想谈三个问题首先呢就是这一轮全球金融动荡的表现。|
+
 ![Task 08 Sample 01](./docs/results/08_speech_recognition/image.png)
 
 ### Task 09：图像生成

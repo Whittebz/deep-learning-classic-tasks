@@ -54,11 +54,3 @@ Thumbs.db
 # ============================
 .conda/
 envs/
-
-# ============================
-# 临时测试生成的文件
-# ============================
-*.png
-!README_assets/*.png
-test_generation.png
-forecast_test.png
