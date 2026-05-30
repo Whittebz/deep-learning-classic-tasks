@@ -92,3 +92,53 @@ conda env create -f 10_time_series_forecasting/environment.yml
 - 新增与训练入口一致的缓存重定向策略；
 - 增加 `OMP_NUM_THREADS` 兜底；
 - 保持原有 `--task/--setup` 使用方式不变，避免对现有流程造成破坏性变更。
+
+
+
+## 7. AutoDL 公网映射与已知问题
+
+### 端口约定
+- `6008`：统一控制台
+- `6006`：当前实际任务页面
+
+### AutoDL 下的代理问题
+
+在 AutoDL 环境中，Gradio 启动时可能访问：
+- `http://localhost:6006/gradio_api/startup-events`
+- `http://localhost:6008/gradio_api/startup-events`
+
+如果实例环境中的代理变量影响了 `localhost`，Gradio 可能会返回 `502` 并退出。
+
+当前仓库已经在 `start_ui.py` 和各任务 `app.py` 中内置：
+
+```bash
+NO_PROXY=127.0.0.1,localhost
+no_proxy=127.0.0.1,localhost
+```
+
+用于避免本机回环地址走代理。
+
+
+
+### 任务切换时的端口释放问题
+
+任务切换时，旧任务虽然已经收到停止信号，但 `6006` 端口不一定会立刻释放。
+如果新任务过早启动，会报：
+
+```text
+OSError: Cannot find empty port in range: 6006-6006
+```
+
+当前 `start_ui.py` 已修复这一点：会等待 `6006` 真正释放后再启动新任务。
+
+### 任务 04 的特殊点
+
+任务 04 的权重目录位于：
+
+```text
+/root/autodl-tmp/04_sentiment_analysis/models/bert_chinese_sentiment
+```
+
+因此任务 04 的 `app.py` 额外做了默认权重路径修复。其他任务没有改动模型或数据路径。
+
+更详细的 AutoDL 使用说明见 [AutoDL_UI_Usage.md](./AutoDL_UI_Usage.md)。
