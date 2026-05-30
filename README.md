@@ -25,67 +25,31 @@
 
 ---
 
-## 2. 训练模式详解
-
-本项目的 10 个任务采用了两种不同的训练方式。
-
-### 基于预训练模型微调 (Fine-tuning) - 任务 01~07
-
-这 7 个任务加载了社区发布的预训练权重（ImageNet / COCO / HuggingFace），然后在一个小数据集上进行微调。
-
-| 编号 | 预训练权重来源 | 微调数据量 | Epochs |
-| :---: | :--- | :--- | :---: |
-| 01 | `torchvision` ResNet18 (ImageNet) | 全集 50000 张 | 2 |
-| 02 | `torchvision` Faster R-CNN MobileNetV3 (COCO) | 120 张 | 2 |
-| 03 | `torchvision` FCN-ResNet50 (COCO) | 200 张子集 | 2 |
-| 04 | HuggingFace `bert-base-chinese` | ChnSentiCorp 完整训练集 | 1 |
-| 05 | HuggingFace `Helsinki-NLP/opus-mt-en-fr` | 450 条子集 | 1 |
-| 06 | HuggingFace `distilbert-base-uncased` | 500 条子集 | 2 |
-| 07 | HuggingFace `t5-small` | 500 条子集 | 1 |
-
-### 从零开始训练 (From Scratch) - 任务 08、09、10
-
-这 3 个任务使用自定义网络架构，没有加载任何预训练权重。
-
-| 编号 | 自定义模型 | 网络类型 | 训练数据量 | Epochs |
-| :---: | :--- | :--- | :--- | :---: |
-| 08 | M5 | 纯一维 CNN | 1000 条子集 | 2 |
-| 09 | DCGAN (Generator + Discriminator) | 对抗生成网络 | 2000 张子集 | 2 |
-| 10 | LSTMForecaster | LSTM 循环网络 | 144 条全集 | 150 |
-
----
-
 ## 3. 硬件要求与 AutoDL 镜像选择
 
 AutoDL 服务器运行。每个任务使用独立的 Conda 虚拟环境，实现依赖完全隔离。
-
-**AutoDL 推荐配置（基础镜像）：**
+**AutoDL 基础镜像：**
 - **框架**：`Miniconda`
-- **Python**：`Python 3.10`（由各任务 `environment.yml` 指定）
-- **CUDA**：`CUDA 12.4`
+- **Python环境**：由各任务 `environment.yml`指定
 - **系统**：`Ubuntu 22.04`
-
-> 不同任务对 PyTorch、CUDA、以及第三方库版本要求可能相互冲突。使用 Conda 为每个任务创建独立环境，可以稳定隔离依赖。
 
 ---
 
 ## 4. 环境部署
 
-### 方式一：一键创建所有环境
+### 一、创建所有环境
 
 ```bash
+#创建所有环境
 cd deep-learning-classic-tasks
 bash setup_envs.sh
-```
 
-### 方式二：按需创建单个环境
-
-```bash
+#按需创建单个环境
 bash setup_envs.sh --task 1
 python start_train.py --task 1 --setup
 ```
 
-### 环境管理命令
+### 二、环境管理命令
 
 ```bash
 bash setup_envs.sh --list
@@ -109,7 +73,12 @@ deep-learning-classic-tasks/
 ├── 01_image_classification/
 ├── 02_object_detection/
 ├── 03_semantic_segmentation/
-├── ...
+├── 04_sentiment_analysis/
+├── 05_machine_translation/
+├── 06_named_entity_recognition/
+├── 07_text_summarization/
+├── 08_speech_recognition/
+├── 09_image_generation/
 └── 10_time_series_forecasting/
 ```
 
@@ -122,8 +91,7 @@ deep-learning-classic-tasks/
 ### 第一步：训练模型
 
 ```bash
-python start_train.py --task 1 --setup
-python start_train.py --task 1
+python start_train.py --task 1 
 python start_train.py --task all --setup
 ```
 
@@ -204,39 +172,114 @@ OSError: Cannot find empty port in range: 6006-6006
 因此任务 04 的 `app.py` 额外做了默认权重路径修复。其他任务没有改动模型或数据路径。
 
 更详细的 AutoDL 使用说明见 [AutoDL_UI_Usage.md](./AutoDL_UI_Usage.md)。
-
 ---
 
-## 8. Conda 环境一览
+## 10. 推理效果展示规范（小样本优先）
 
-| 环境名 | 对应任务 | 核心依赖 |
+当前项目更适合采用“小样本先展示推理样例”的方式，不强制要求每个任务都补训练曲线。
+这样更省时间，也更符合 README 的展示目的：让读者快速看到模型实际输出。
+
+### 统一目录规范
+
+推荐在仓库根目录下统一使用：
+
+```text
+docs/
+└── results/
+    ├── 01_image_classification/
+    ├── 02_object_detection/
+    ├── 03_semantic_segmentation/
+    ├── 04_sentiment_analysis/
+    ├── 05_machine_translation/
+    ├── 06_named_entity_recognition/
+    ├── 07_text_summarization/
+    ├── 08_speech_recognition/
+    ├── 09_image_generation/
+    └── 10_time_series_forecasting/
+```
+
+每个任务目录下只放“推理展示”相关内容，建议命名尽量固定：
+
+```text
+docs/results/01_image_classification/
+├── sample_01.png
+├── sample_02.png
+└── README.md
+```
+
+说明：
+- `sample_01.png`、`sample_02.png`：推理结果图，适合 CV / 生成 / 时序可视化任务
+- `README.md`：该任务的简短说明，适合 NLP / Audio 这类更适合表格展示的任务
+
+### 单任务建议内容
+
+小样本阶段，每个任务保留下面一种即可：
+- CV / 图像生成 / 时序任务：1 到 3 张推理结果图
+- NLP / Audio 任务：1 个结果表格，或 3 到 5 条样例输入输出
+
+### README 推荐写法
+
+```markdown
+## 10. 推理效果展示
+
+### 01 图像分类
+![01 sample 01](./docs/results/01_image_classification/sample_01.png)
+![01 sample 02](./docs/results/01_image_classification/sample_02.png)
+
+说明：展示输入图像、预测类别与置信度。
+
+### 02 目标检测
+![02 sample 01](./docs/results/02_object_detection/sample_01.png)
+
+说明：图中应包含预测框、类别和置信度；如有余力，可补一张 GT 对照图。
+
+### 04 情感分析
+见：[`docs/results/04_sentiment_analysis/README.md`](./docs/results/04_sentiment_analysis/README.md)
+
+建议表格：
+
+| 输入文本 | 预测结果 | 置信度 |
+| :--- | :---: | :---: |
+| 这个产品真的很好用 | Positive | 0.98 |
+| 体验很差，再也不会买了 | Negative | 0.99 |
+
+### 05 机器翻译
+见：[`docs/results/05_machine_translation/README.md`](./docs/results/05_machine_translation/README.md)
+
+| Source | Prediction | Reference |
 | :--- | :--- | :--- |
-| `dl_task01` | 图像分类 | torch, torchvision, pillow, gradio |
-| `dl_task02` | 目标检测 | torch, torchvision, numpy, pillow, gradio |
-| `dl_task03` | 语义分割 | torch, torchvision, numpy, pillow, gradio |
-| `dl_task04` | 情感分析 | torch, transformers, datasets, gradio |
-| `dl_task05` | 机器翻译 | torch, transformers, datasets, sacremoses, gradio |
-| `dl_task06` | 命名实体识别 | torch, transformers, datasets, gradio |
-| `dl_task07` | 文本摘要 | torch, transformers, datasets, gradio |
-| `dl_task08` | 语音识别 | torch, torchaudio, librosa, soundfile, gradio |
-| `dl_task09` | 图像生成 | torch, torchvision, matplotlib, gradio |
-| `dl_task10` | 时间序列预测 | torch, pandas, scikit-learn, matplotlib, gradio |
+| I love deep learning. | J'aime l'apprentissage profond. | J'aime l'apprentissage profond. |
 
----
+### 08 语音识别
+见：[`docs/results/08_speech_recognition/README.md`](./docs/results/08_speech_recognition/README.md)
 
-## 9. 训练产物（权重文件）一览
+| 音频样例 | Prediction | Ground Truth |
+| :--- | :--- | :--- |
+| sample_01.wav | yes | yes |
 
-| 编号 | 保存路径 | 文件类型 |
-| :---: | :--- | :--- |
-| 01 | `01_image_classification/models/resnet18_cifar10.pth` | PyTorch state_dict |
-| 02 | `02_object_detection/models/faster_rcnn_pennfudan.pth` | PyTorch state_dict |
-| 03 | `03_semantic_segmentation/models/fcn_resnet50_pet.pth` | PyTorch state_dict |
-| 04 | `/root/autodl-tmp/04_sentiment_analysis/models/bert_chinese_sentiment/` | HuggingFace 模型目录 |
-| 05 | `05_machine_translation/models/translation_en_fr/` | HuggingFace 模型目录 |
-| 06 | `06_named_entity_recognition/models/distilbert_ner/` | HuggingFace 模型目录 |
-| 07 | `07_text_summarization/models/t5_summarization/` | HuggingFace 模型目录 |
-| 08 | `08_speech_recognition/models/m5_speech_commands.pth` | PyTorch state_dict |
-| 09 | `09_image_generation/models/dcgan_generator.pth` | PyTorch state_dict |
-| 10 | `10_time_series_forecasting/models/lstm_airline.pth` + `scaler.pkl` | PyTorch + Joblib |
+### 10 时间序列预测
+![10 sample 01](./docs/results/10_time_series_forecasting/sample_01.png)
 
-> 所有 `models/` 和 `data/` 目录均已通过 `.gitignore` 忽略，不会被推送到 Git 仓库。
+说明：建议在同一张图中展示历史序列、预测曲线与真实值。
+```
+
+### 怎么体现“这是推理结果”
+
+推荐统一遵循下面的展示原则：
+- 图像任务：图上直接叠加预测类别、框、mask、分数
+- 文本任务：展示 `Input / Prediction / Reference` 三列
+- 语音任务：展示音频文件名、预测文本或标签、真实标签
+- 时序任务：同图展示历史窗口、预测段、真实未来段
+- 图注或说明中明确写明“由 `inference.py` 或 `app.py` 推理得到”
+
+### 行业内更常见的轻量展示方式
+
+如果是 GitHub README，而不是正式论文或报告，最常见的做法其实很克制：
+- 首页只放每个任务 1 张代表图，或 1 个代表表
+- 详细样例放到 `docs/results/<task_name>/README.md`
+- 不追求把所有样本都堆到首页，重点是可读性和可信度
+
+对你这个项目，当前最合适的方式就是：
+- README 首页保留每个任务 1 个推理样例入口
+- 具体样例统一收进 `docs/results/任务名/`
+- 先不做训练曲线占位，后续真有需要再补
