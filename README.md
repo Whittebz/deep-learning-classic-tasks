@@ -115,39 +115,6 @@ python start_ui.py --task 10 --setup
 本节按“每个任务一个可运行演示用例”的方式组织，只展示推理结果，不展示训练曲线。
 你后续只需要把图片放到对应的 `docs/results/<task_name>/` 目录，并替换下方占位内容即可。
 
-### 10.1 结果素材目录约定
-
-```text
-docs/
-└── results/
-    ├── 01_image_classification/
-    │   ├── sample_01.png
-    │   └── sample_02.png
-    ├── 02_object_detection/
-    │   └── sample_01.png
-    ├── 03_semantic_segmentation/
-    │   └── sample_01.png
-    ├── 04_sentiment_analysis/
-    │   └── README.md
-    ├── 05_machine_translation/
-    │   └── README.md
-    ├── 06_named_entity_recognition/
-    │   └── README.md
-    ├── 07_text_summarization/
-    │   └── README.md
-    ├── 08_speech_recognition/
-    │   └── README.md
-    ├── 09_image_generation/
-    │   └── sample_01.png
-    └── 10_time_series_forecasting/
-        └── sample_01.png
-```
-
-说明：
-- 图像类任务直接放 `.png` 推理结果图
-- NLP / Audio 任务优先在对应目录的 `README.md` 中放表格或样例输出
-- 首页 README 只放最关键的 1 个样例，避免过长
-
 ### 10.2 各任务推理效果展示
 
 #### Task 01 图像分类
@@ -156,7 +123,6 @@ docs/
 - 预期：返回类别预测标签与概率，页面无报错
 
 推理结果示例：
-
 ![Task 01 Sample 01](./docs/results/01_image_classification/sample_01.png)
 ![Task 01 Sample 02](./docs/results/01_image_classification/sample_02.png)
 
