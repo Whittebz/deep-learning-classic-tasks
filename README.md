@@ -23,6 +23,36 @@
 | **10** | 时间序列预测 | TimeSeries | LSTM (自定义) | Airline Passengers (144条) | 从零训练 |
 
 ---
+## 项目结构概览
+
+```text
+deep-learning-classic-tasks/
+├── README.md                     
+├── setup_envs.sh                  # 批量创建 Conda 环境
+├── start_train.py                 # 统一训练入口
+├── start_ui.py                    # 统一 Gradio 展示入口
+├── docs/results/                  # 推理样例与展示素材
+├── 01_image_classification/       # 任务 01：图像分类
+│   ├── environment.yml            # 任务 01 独立环境定义
+│   ├── train.py                   
+│   ├── inference.py               # 推理逻辑
+│   ├── app.py                     # Gradio 可视化界面
+│   ├── data/                      # 数据集
+│   └── models/                    # 模型权重
+├── 02_object_detection/           # 任务 02：目标检测
+├── 03_semantic_segmentation/      # 任务 03：语义分割
+├── 04_sentiment_analysis/         # 任务 04：情感分析
+├── 05_machine_translation/        # 任务 05：机器翻译
+├── 06_named_entity_recognition/   # 任务 06：命名实体识别
+├── 07_text_summarization/         # 任务 07：文本摘要
+├── 08_speech_recognition/         # 任务 08：语音识别
+├── 09_image_generation/           # 任务 09：图像生成
+└── 10_time_series_forecasting/    # 任务 10：时间序列预测
+```
+
+> 每个任务子目录内部结构基本一致。
+
+
 
 ## 3. 硬件要求与 AutoDL 镜像选择
 
@@ -46,51 +76,13 @@ bash setup_envs.sh
 #按需创建conda环境
 bash setup_envs.sh --task 1
 python start_train.py --task 1 --setup
-```
-
-### 二、环境管理命令
+二、环境管理命令
 
 ```bash
 bash setup_envs.sh --list
 bash setup_envs.sh --task 1 --force
 bash setup_envs.sh --clean
 ```
-
----
-
-## 5. 项目结构概览
-
-```text
-deep-learning-classic-tasks/
-├── README.md                      # 项目总说明文档
-├── requirements.txt               # 通用依赖补充
-├── setup_envs.sh                  # 批量创建 Conda 环境
-├── start_train.py                 # 统一训练入口
-├── start_ui.py                    # 统一 Gradio 展示入口
-├── AutoDL_UI_Usage.md             # AutoDL 使用说明
-├── docs/results/                  # 各任务推理样例与展示素材
-├── Log/                           # 训练与运行日志
-├── 01_image_classification/       # 任务 01：图像分类
-│   ├── environment.yml            # 任务 01 独立环境定义
-│   ├── train.py                   # 模型训练脚本
-│   ├── inference.py               # 单样本/批量推理逻辑
-│   ├── app.py                     # Gradio 可视化界面
-│   ├── data/                      # 数据集或缓存文件
-│   └── models/                    # 训练得到的模型权重
-├── 02_object_detection/           # 任务 02：目标检测
-├── 03_semantic_segmentation/      # 任务 03：语义分割
-├── 04_sentiment_analysis/         # 任务 04：情感分析
-├── 05_machine_translation/        # 任务 05：机器翻译
-├── 06_named_entity_recognition/   # 任务 06：命名实体识别
-├── 07_text_summarization/         # 任务 07：文本摘要
-├── 08_speech_recognition/         # 任务 08：语音识别
-├── 09_image_generation/           # 任务 09：图像生成
-└── 10_time_series_forecasting/    # 任务 10：时间序列预测
-```
-
-> 每个任务子目录内部结构基本一致，通常包含 `environment.yml`、`train.py`、`inference.py`、`app.py`、`data/`、`models/`。上面仅展开 `01_image_classification/` 作为示例。
-
----
 
 ## 6. 如何运行
 
@@ -108,22 +100,6 @@ python start_train.py --task all --setup
 ```bash
 python start_ui.py
 ```
-
-说明：
-- `start_ui.py` 会自动检查当前环境是否有 `gradio`
-- 如果当前环境没有 `gradio`，会自动切换到一个可用的 `dl_taskXX` Conda 环境重新启动自己
-- 控制台固定监听 `6008`
-- 实际任务页面固定监听 `6006`
-- 同一时间只允许一个任务占用 `6006`
-- 切换任务时，控制台会先停止上一个任务，并等待 `6006` 端口真正释放，再启动下一个任务
-
-推荐访问顺序：
-1. 打开 `6008` 对应的本地地址或 AutoDL 公网映射地址
-2. 在控制台里选择要展示的任务
-3. 再打开 `6006` 对应地址查看当前任务页面
-
-#### 兼容方式：直接启动单任务
-
 ```bash
 python start_ui.py --task 4
 python start_ui.py --task 10 --setup
@@ -133,52 +109,6 @@ python start_ui.py --task 10 --setup
 
 ---
 
-## 7. AutoDL 公网映射与已知问题
-
-### 端口约定
-- `6008`：统一控制台
-- `6006`：当前实际任务页面
-
-### AutoDL 下的代理问题
-
-在 AutoDL 环境中，Gradio 启动时可能访问：
-- `http://localhost:6006/gradio_api/startup-events`
-- `http://localhost:6008/gradio_api/startup-events`
-
-如果实例环境中的代理变量影响了 `localhost`，Gradio 可能会返回 `502` 并退出。
-
-当前仓库已经在 `start_ui.py` 和各任务 `app.py` 中内置：
-
-```bash
-NO_PROXY=127.0.0.1,localhost
-no_proxy=127.0.0.1,localhost
-```
-
-用于避免本机回环地址走代理。
-
-### 任务切换时的端口释放问题
-
-任务切换时，旧任务虽然已经收到停止信号，但 `6006` 端口不一定会立刻释放。
-如果新任务过早启动，会报：
-
-```text
-OSError: Cannot find empty port in range: 6006-6006
-```
-
-当前 `start_ui.py` 已修复这一点：会等待 `6006` 真正释放后再启动新任务。
-
-### 任务 04 的特殊点
-
-任务 04 的权重目录位于：
-
-```text
-/root/autodl-tmp/04_sentiment_analysis/models/bert_chinese_sentiment
-```
-
-因此任务 04 的 `app.py` 额外做了默认权重路径修复。其他任务没有改动模型或数据路径。
-
-更详细的 AutoDL 使用说明见 [AutoDL_UI_Usage.md](./AutoDL_UI_Usage.md)。
----
 
 ## 10. 推理效果展示
 

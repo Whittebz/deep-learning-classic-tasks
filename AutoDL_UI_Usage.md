@@ -68,3 +68,67 @@ export no_proxy=127.0.0.1,localhost
 - `http://127.0.0.1:6006` 返回 `200 OK`
 - `http://127.0.0.1:6008` 返回 `200 OK`
 - 任务 4 权重目录已确认为：`/root/autodl-tmp/04_sentiment_analysis/models/bert_chinese_sentiment`
+
+
+说明：
+- `start_ui.py` 会自动检查当前环境是否有 `gradio`
+- 如果当前环境没有 `gradio`，会自动切换到一个可用的 `dl_taskXX` Conda 环境重新启动自己
+- 控制台固定监听 `6008`
+- 实际任务页面固定监听 `6006`
+- 同一时间只允许一个任务占用 `6006`
+- 切换任务时，控制台会先停止上一个任务，并等待 `6006` 端口真正释放，再启动下一个任务
+
+推荐访问顺序：
+1. 打开 `6008` 对应的本地地址或 AutoDL 公网映射地址
+2. 在控制台里选择要展示的任务
+3. 再打开 `6006` 对应地址查看当前任务页面
+
+#### 兼容方式：直接启动单任务
+
+
+## 7. AutoDL 公网映射与已知问题
+
+### 端口约定
+- `6008`：统一控制台
+- `6006`：当前实际任务页面
+
+### AutoDL 下的代理问题
+
+在 AutoDL 环境中，Gradio 启动时可能访问：
+- `http://localhost:6006/gradio_api/startup-events`
+- `http://localhost:6008/gradio_api/startup-events`
+
+如果实例环境中的代理变量影响了 `localhost`，Gradio 可能会返回 `502` 并退出。
+
+当前仓库已经在 `start_ui.py` 和各任务 `app.py` 中内置：
+
+```bash
+NO_PROXY=127.0.0.1,localhost
+no_proxy=127.0.0.1,localhost
+```
+
+用于避免本机回环地址走代理。
+
+### 任务切换时的端口释放问题
+
+任务切换时，旧任务虽然已经收到停止信号，但 `6006` 端口不一定会立刻释放。
+如果新任务过早启动，会报：
+
+```text
+OSError: Cannot find empty port in range: 6006-6006
+```
+
+当前 `start_ui.py` 已修复这一点：会等待 `6006` 真正释放后再启动新任务。
+
+### 任务 04 的特殊点
+
+任务 04 的权重目录位于：
+
+```text
+/root/autodl-tmp/04_sentiment_analysis/models/bert_chinese_sentiment
+```
+
+因此任务 04 的 `app.py` 额外做了默认权重路径修复。其他任务没有改动模型或数据路径。
+
+更详细的 AutoDL 使用说明见 [AutoDL_UI_Usage.md](./AutoDL_UI_Usage.md)。
+---
