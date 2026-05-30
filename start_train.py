@@ -85,6 +85,28 @@ def create_conda_env(task_dir, env_name):
         print("请尝试手动运行: conda env create -f", env_file)
         return False
 
+def update_conda_env(task_dir, env_name):
+    """将已有 Conda 环境与 environment.yml 同步"""
+    env_file = os.path.join(task_dir, "environment.yml")
+    if not os.path.exists(env_file):
+        print(f"错误: 环境配置文件不存在: {env_file}")
+        return False
+
+    print(f"\n{'='*50}")
+    print(f"正在同步 {task_dir} 的 Conda 环境: {env_name}")
+    print(f"{'='*50}\n")
+
+    try:
+        subprocess.run(
+            ["conda", "env", "update", "-n", env_name, "-f", env_file, "--prune"],
+            check=True
+        )
+        print(f"\n✓ 环境 {env_name} 已同步到最新依赖！\n")
+        return True
+    except subprocess.CalledProcessError as e:
+        print(f"\n✗ 环境 {env_name} 同步失败 (错误码: {e.returncode})")
+        print("请尝试手动运行: conda env update -n", env_name, "-f", env_file, "--prune")
+        return False
 def check_conda_available():
     """检查系统中是否安装了 conda"""
     if shutil.which("conda") is None:

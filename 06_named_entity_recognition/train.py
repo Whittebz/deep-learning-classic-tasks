@@ -1,119 +1,127 @@
+import json
 import os
-os.environ.setdefault("HF_ENDPOINT", "https://hf-mirror.com")  # 国内镜像
+import subprocess
+
+os.environ.setdefault("HF_ENDPOINT", "https://hf-mirror.com")
 
 import torch
-from datasets import load_dataset
-from transformers import (
-    AutoTokenizer, 
-    AutoModelForTokenClassification, 
-    TrainingArguments, 
-    Trainer,
-    DataCollatorForTokenClassification
-)
+from transformers import AutoConfig, AutoModelForTokenClassification, BertTokenizerFast
+
+MODEL_REPO = "ckiplab/bert-base-chinese-ner"
+SAVE_PATH = "models/bert_base_chinese_ner"
+MODEL_CACHE_DIR = "models/pretrained_ckip_ner_cache"
+MODEL_FILES = [
+    "config.json",
+    "pytorch_model.bin",
+    "vocab.txt",
+    "tokenizer_config.json",
+    "special_tokens_map.json",
+]
+MODEL_BASE_URLS = [
+    f"{os.environ.get('HF_ENDPOINT', 'https://hf-mirror.com').rstrip('/')}/{MODEL_REPO}/resolve/main",
+    f"https://huggingface.co/{MODEL_REPO}/resolve/main",
+]
+
+
+def download_with_curl(url, dest_path):
+    tmp_path = dest_path + ".part"
+    if os.path.exists(tmp_path):
+        os.remove(tmp_path)
+
+    cmd = [
+        "curl",
+        "-fL",
+        "--retry",
+        "5",
+        "--retry-delay",
+        "2",
+        "--connect-timeout",
+        "20",
+        "--max-time",
+        "0",
+        "-o",
+        tmp_path,
+        url,
+    ]
+    subprocess.run(cmd, check=True)
+    os.replace(tmp_path, dest_path)
+
+
+def ensure_model_files():
+    os.makedirs(MODEL_CACHE_DIR, exist_ok=True)
+    missing_files = [name for name in MODEL_FILES if not os.path.exists(os.path.join(MODEL_CACHE_DIR, name))]
+    if not missing_files:
+        print(f"Using cached model files from {MODEL_CACHE_DIR}")
+        return MODEL_CACHE_DIR, "local-cache"
+
+    last_exc = None
+    for base_url in MODEL_BASE_URLS:
+        try:
+            print(f"Trying direct model download via: {base_url}")
+            for name in missing_files:
+                dest_path = os.path.join(MODEL_CACHE_DIR, name)
+                if os.path.exists(dest_path):
+                    continue
+                file_url = f"{base_url}/{name}"
+                print(f"Downloading {name} ...")
+                download_with_curl(file_url, dest_path)
+            print(f"Model files downloaded via: {base_url}")
+            return MODEL_CACHE_DIR, base_url
+        except Exception as e:
+            last_exc = e
+            print(f"Failed direct model download via {base_url}: {e}")
+    raise RuntimeError(
+        "Unable to download the Chinese NER model files from either the configured mirror or huggingface.co."
+    ) from last_exc
+
+
+def load_local_model(model_dir):
+    config = AutoConfig.from_pretrained(model_dir)
+    model = AutoModelForTokenClassification.from_config(config)
+    weight_path = os.path.join(model_dir, "pytorch_model.bin")
+    state_dict = torch.load(weight_path, map_location="cpu")
+    state_dict.pop("bert.embeddings.position_ids", None)
+    missing_keys, unexpected_keys = model.load_state_dict(state_dict, strict=False)
+    if missing_keys:
+        print(f"Missing keys during state_dict load: {missing_keys}")
+    if unexpected_keys:
+        print(f"Unexpected keys during state_dict load: {unexpected_keys}")
+    return model
+
 
 def train():
-    device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
+    device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
     print(f"Using device: {device}")
+    print("Preparing Chinese NER model for local inference...")
+    print(f"Model repo: {MODEL_REPO}")
 
-    print("Downloading and preparing CoNLL-2003 dataset...")
-    # CoNLL-2003 is the classic NER dataset
-    dataset = load_dataset("tomaarsen/conll2003")
-    
-    # We will take a very small subset for fast demonstration
-    small_train_dataset = dataset["train"].select(range(500))
-    small_eval_dataset = dataset["validation"].select(range(100))
-    
-    model_checkpoint = "distilbert-base-uncased"
-    tokenizer = AutoTokenizer.from_pretrained(model_checkpoint)
-    
-    # NER tags in CoNLL-2003: 0:O, 1:B-PER, 2:I-PER, 3:B-ORG, 4:I-ORG, 5:B-LOC, 6:I-LOC, 7:B-MISC, 8:I-MISC
-    label_list = dataset["train"].features[f"ner_tags"].feature.names
-    
-    def tokenize_and_align_labels(examples):
-        tokenized_inputs = tokenizer(examples["tokens"], truncation=True, is_split_into_words=True)
-
-        labels = []
-        for i, label in enumerate(examples[f"ner_tags"]):
-            word_ids = tokenized_inputs.word_ids(batch_index=i)
-            previous_word_idx = None
-            label_ids = []
-            for word_idx in word_ids:
-                if word_idx is None:
-                    label_ids.append(-100)
-                elif word_idx != previous_word_idx:
-                    label_ids.append(label[word_idx])
-                else:
-                    label_ids.append(-100)
-                previous_word_idx = word_idx
-            labels.append(label_ids)
-
-        tokenized_inputs["labels"] = labels
-        return tokenized_inputs
-
-    print("Tokenizing datasets...")
-    tokenized_train = small_train_dataset.map(tokenize_and_align_labels, batched=True)
-    tokenized_eval = small_eval_dataset.map(tokenize_and_align_labels, batched=True)
-    
-    # Load model
-    model = AutoModelForTokenClassification.from_pretrained(model_checkpoint, num_labels=len(label_list))
+    model_source_dir, model_download_source = ensure_model_files()
+    tokenizer = BertTokenizerFast.from_pretrained(model_source_dir)
+    model = load_local_model(model_source_dir)
     model.to(device)
-    
-    data_collator = DataCollatorForTokenClassification(tokenizer)
-    
-    common_args = dict(
-        output_dir="./models/results",
-        learning_rate=2e-5,
-        per_device_train_batch_size=16,
-        per_device_eval_batch_size=16,
-        num_train_epochs=2,
-        weight_decay=0.01,
-        save_strategy="epoch",
-        logging_steps=10,
-    )
-    try:
-        training_args = TrainingArguments(
-            eval_strategy="epoch",
-            **common_args,
-        )
-    except TypeError:
-        training_args = TrainingArguments(
-            evaluation_strategy="epoch",
-            **common_args,
+    model.eval()
+
+    os.makedirs(SAVE_PATH, exist_ok=True)
+    tokenizer.save_pretrained(SAVE_PATH)
+    model.save_pretrained(SAVE_PATH, safe_serialization=True)
+
+    with open(os.path.join(SAVE_PATH, "training_meta.json"), "w", encoding="utf-8") as f:
+        json.dump(
+            {
+                "mode": "pretrained_model_cache",
+                "model_repo": MODEL_REPO,
+                "hf_endpoint": os.environ.get("HF_ENDPOINT", ""),
+                "task": "chinese_named_entity_recognition",
+                "model_cache_dir": MODEL_CACHE_DIR,
+                "model_download_source": model_download_source,
+            },
+            f,
+            ensure_ascii=False,
+            indent=2,
         )
 
-    try:
-        trainer = Trainer(
-            model=model,
-            args=training_args,
-            train_dataset=tokenized_train,
-            eval_dataset=tokenized_eval,
-            processing_class=tokenizer,
-            data_collator=data_collator,
-        )
-    except TypeError:
-        trainer = Trainer(
-            model=model,
-            args=training_args,
-            train_dataset=tokenized_train,
-            eval_dataset=tokenized_eval,
-            tokenizer=tokenizer,
-            data_collator=data_collator,
-        )
+    print(f"Chinese NER model is ready at: {SAVE_PATH}")
 
-    print("Starting training...")
-    trainer.train()
-
-    save_path = "models/distilbert_ner"
-    print(f"Saving fine-tuned model to {save_path}...")
-    model.save_pretrained(save_path)
-    tokenizer.save_pretrained(save_path)
-    
-    # Save label list mapping
-    model.config.id2label = {i: label for i, label in enumerate(label_list)}
-    model.config.label2id = {label: i for i, label in enumerate(label_list)}
-    model.config.save_pretrained(save_path)
-    
-    print("Training completed.")
 
 if __name__ == "__main__":
     train()

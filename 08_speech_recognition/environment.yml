@@ -1,6 +1,5 @@
 # Task 08: 语音识别 (Speech Recognition)
-# 模型: M5 (自定义CNN) | 数据集: SpeechCommands | 框架: PyTorch + TorchAudio
-# 注意：torchaudio 必须通过 conda 的 pytorch 渠道安装，确保与 torch 的 CUDA 版本严格一致
+# 模型: Whisper | 任务: 中文语音转写 | 框架: PyTorch + Transformers + TorchAudio
 name: dl_task08
 channels:
   - pytorch
@@ -18,3 +17,7 @@ dependencies:
     - librosa
     - soundfile
     - gradio
+    - transformers>=4.41.0
+    - accelerate
+    - sentencepiece
+    - safetensors

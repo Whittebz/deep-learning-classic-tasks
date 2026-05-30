@@ -89,8 +89,17 @@ create_env() {
     fi
 
     if env_exists "$env_name"; then
-        print_warning "环境已存在，跳过: ${env_name} (使用 --force 强制重建)"
-        return 0
+        echo ""
+        echo -e "${BLUE}▶ 环境已存在，正在同步依赖 [${env_name}] 来自 ${task_dir}/environment.yml ...${NC}"
+        echo "  这可能需要几分钟，取决于网络速度..."
+
+        if conda env update -n "$env_name" -f "$env_file" --prune 2>&1; then
+            print_success "环境同步成功: ${env_name}"
+            return 0
+        else
+            print_error "环境同步失败: ${env_name}"
+            return 1
+        fi
     fi
 
     echo ""

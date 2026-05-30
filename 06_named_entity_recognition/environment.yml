@@ -1,5 +1,5 @@
-# Task 06: 命名实体识别 (Named Entity Recognition)
-# 模型: DistilBERT | 数据集: CoNLL-2003 | 框架: HuggingFace Transformers
+# Task 06: 中文命名实体识别 (Chinese Named Entity Recognition)
+# 模型: ckiplab/bert-base-chinese-ner | 分词器: bert-base-chinese | 框架: HuggingFace Transformers
 name: dl_task06
 channels:
   - pytorch
@@ -13,7 +13,6 @@ dependencies:
   - pip
   - pip:
     - transformers
-    - datasets
     - accelerate
-    - evaluate
+    - sentencepiece
     - gradio

@@ -1,5 +1,5 @@
-# Task 07: 文本摘要 (Text Summarization)
-# 模型: T5-small | 数据集: CNN/DailyMail | 框架: HuggingFace Transformers
+# Task 07: 中文生成式摘要 (Chinese Generative Summarization)
+# 模型: IDEA-CCNL/Randeng-T5-77M-MultiTask-Chinese | 数据: 在线下载 LCSTS 小子集 | 框架: PyTorch + Transformers + Gradio
 name: dl_task07
 channels:
   - pytorch
@@ -13,7 +13,6 @@ dependencies:
   - pip
   - pip:
     - transformers
-    - datasets
+    - sentencepiece
     - accelerate
-    - evaluate
     - gradio

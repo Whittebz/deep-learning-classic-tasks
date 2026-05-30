@@ -54,10 +54,10 @@ TASK_TITLES = {
     3: "03 Semantic Segmentation - FCN",
     4: "04 文本分类 - 中文情感分析",
     5: "05 Machine Translation - English to French",
-    6: "06 Named Entity Recognition",
+    6: "06 中文命名实体识别",
     7: "07 Text Summarization",
     8: "08 Speech Recognition",
-    9: "09 Image Generation - DCGAN",
+    9: "09 Image Generation -Diffusion",
     10: "10 Time Series Forecasting",
 }
 
