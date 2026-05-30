@@ -1,3 +1,8 @@
+import os
+
+os.environ['NO_PROXY'] = '127.0.0.1,localhost'
+os.environ['no_proxy'] = '127.0.0.1,localhost'
+
 import gradio as gr
 from inference import ImageClassifier
 
